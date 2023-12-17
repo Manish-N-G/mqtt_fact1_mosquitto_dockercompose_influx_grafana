@@ -1,0 +1,62 @@
+In process to create it to working
+git push -u origin main
+
+Taken link from
+-- https://github.com/Miceuz/docker-compose-mosquitto-influxdb-telegraf-grafana  (main)
+-- https://lucassardois.medium.com/handling-iot-data-with-mqtt-telegraf-influxdb-and-grafana-5a431480217  (helper)
+
+docker hub from
+-- https://hub.docker.com/_/eclipse-mosquitto
+
+Mosquitto website
+-- https://mosquitto.org/
+
+Youtube Docker tutorials
+ -- https://www.youtube.com/watch?v=bKFMS5C4CG0
+ -- https://www.youtube.com/watch?v=HG6yIjZapSA
+
+
+useful links:
+-- https://cedalo.com/blog/mosquitto-docker-configuration-ultimate-guide/
+-- https://cedalo.com/blog/configuring-paho-mqtt-python-client-with-examples/
+-- https://www.datacamp.com/tutorial/a-complete-guide-to-socket-programming-in-python
+
+Next implementation :
+HIghbite... too expensive to implementation
+Lithmus... similar to hivemq. we can use it for mqtt and uns. Client of Vincent.
+Sparkplug b/c for the next factory...
+HiveHQ
+use real sensors to get and push data.
+
+
+Websockets python lib
+websockets is a library for building WebSocket servers and clients in Python with a 
+focus on correctness, simplicity, robustness, and performance. Built on top of asyncio, 
+Python's standard asynchronous I/O framework, the default implementation provides an elegant coroutine-based API.
+
+
+Command list:
+sudo docker container exec mosquitto mosquitto_pub -t 'paper_wifi/test/' -m '{"humidity":21, "temperature":21, "battery_voltage_mv":3000}'
+sudo docker container exec mosquitto mosquitto_sub -t 'paper_wifi/test/'
+ongoing log 
+docker-compose logs -f mqtt-broker-fact1 
+docker exec -it mqtt-broker-fact1 sh
+
+User_login_info
+ -- grafana : Username and pasword are admin:admin     admin:GSmaster
+ -- Influxdb : Username and password are user:password1234
+
+General Random Commands 
+docker-compose up/down/stop -d
+docker-compose ps
+docker exec <container name>
+docker network ls
+docker inspect <container name>, <network name>
+docker image rm <image name>               (rm for remove)
+docker image ls -q
+docker image rm $(docker image ls -q)       (-a  for all, -f for force)
+docker container rm $(docker container ls -q)
+
+ip add show
+ip route
+bridge link

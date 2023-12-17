@@ -1,9 +1,10 @@
 version: "3"
-
+ 
 services:
   mqtt-broker-fact1:
+    #image: my-eclipse-mosquitto:latest
     image: eclipse-mosquitto:latest
-    container_name: mosquitto_fact1
+    container_name: mqtt-broker-fact1
     restart: always
     ports:
       - "1883:1883"
@@ -12,18 +13,31 @@ services:
       - network_mqtt_fact1
     volumes:
       - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
-  
+    #  - ./publisher.py:/publisher.py
+    #  - ./subscriber.py:/subscriber.py
+
+    #command: >
+    #  "apk update  &&
+    #  apk add nano python3"
+    #  configs:
+    #   &&
+    #  apt-get update  &&"   
+    #   bash -c "
+    #  python3 /app/publisher.py"
+
+
+
   influxdb-fact1:
     image: influxdb
-    container_name: influxdb_fact1
+    container_name: influxdb-fact1
     restart: always
     ports:
       - "8086:8086"
     networks:
       - network_mqtt_fact1
     volumes:
-      - influxdb-data:/var/lib/influxdb2
-      - influxdb-config:/etc/influxdb2
+      - ./influxdb-data:/var/lib/influxdb2      # I made this a bind mount
+      - ./influxdb-config:/etc/influxdb2         # I made this a bind mount
     environment:
       - DOCKER_INFLUXDB_INIT_MODE=setup
       - DOCKER_INFLUXDB_INIT_USERNAME=user
@@ -31,10 +45,12 @@ services:
       - DOCKER_INFLUXDB_INIT_ORG=fact1_org
       - DOCKER_INFLUXDB_INIT_BUCKET=fact1_data
       - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=4eYvsu8wZCJ6tKuE2sxvFHkvYFwSMVK0011hEEiojvejzpSaij86vYQomN_12au6eK-2MZ6Knr-Sax201y70w==fact1
-  
+
+
+
   telegraf-fact1:
     image: telegraf
-    container_name: telegraf_fact1
+    container_name: telegraf-fact1
     restart: always
     volumes:
       - ./telegraf.conf:/etc/telegraf/telegraf.conf:ro
@@ -43,10 +59,12 @@ services:
       - influxdb-fact1
     networks:
       - network_mqtt_fact1
-  
+
+
+
   grafana-fact1:
     image: grafana/grafana
-    container_name: grafana_fact1
+    container_name: grafana-fact1
     restart: always
     ports:
       - "3000:3000"
@@ -54,9 +72,73 @@ services:
       - network_mqtt_fact1
     volumes:
       - ./grafana-provisioning:/etc/grafana/provisioning
-      - grafana-data:/var/lib/grafana
+      - grafana-data:/var/lib/grafana  # I made this a bind mount  ./grafana-data:/var/lib/grafana
     depends_on:
       - influxdb-fact1
+
+
+
+
+  mqtt-publisher:
+    image: ubuntu:latest  #image: python:3.9 .. python was the wrong image
+    container_name: mqtt-publisher
+    depends_on:
+      - mqtt-broker-fact1
+      - influxdb-fact1   #container service... not container name
+      - telegraf-fact1
+      - grafana-fact1
+    #restart: always
+    working_dir: /app
+    command: >
+      bash -c "
+      apt-get update  &&
+      apt-get install -y apt-utils nano python3 &&
+      apt-get update"   
+    #  python3 /app/publisher.py"
+    #  bash -c "  apt-get install -y python3 &&
+    #  apt-get update  &&
+    #  apt-get install -y mosquitto-clients &&
+    #  pip install paho-mqtt &&
+    #  python /app/publisher.py"
+    networks:
+      - network_mqtt_fact1
+    volumes:
+      - ./publisher.py:/app/publisher.py      # I made this a bind mount ./mqtt-pub:/app
+    tty: true    # this allocates a peeudo=tty so that we can see values in real-time
+    #build:
+    #  context: .
+    #  dockerfile: /dev/null  # Specify a non-existent Dockerfile to disable default behavior
+
+
+  mqtt-subscriber:
+    image: python:3.9
+    container_name: mqtt-subscriber
+    depends_on:    # what is happening here?
+      - mqtt-broker-fact1
+      - influxdb-fact1
+      - telegraf-fact1
+      - grafana-fact1
+      - mqtt-publisher
+    #restart: always
+    command: >
+      bash -c "
+      apt-get update &&
+      apt-get install -y nano"
+    #  python /app/subscriber.py"
+    #  bash -c "
+    #  apt-get update &&
+    #  apt-get install -y mosquitto-clients &&
+    #  pip install paho-mqtt &&
+    #  python /app/subscriber.py"
+    networks:
+      - network_mqtt_fact1
+    volumes:
+      - ./subscriber.py:/app/subscriber.py     # I made this a bind mount ./mqtt-pub:/app 
+    tty: true    # this allocates a peeudo=tty so that we can see values in real-time
+    #build:
+    #  context: .
+    #  dockerfile: /dev/null  # Specify a non-existent Dockerfile to disable default behavior
+
 
 networks:
   network_mqtt_fact1:
